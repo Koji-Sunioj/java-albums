@@ -33,84 +33,103 @@ public class Main {
         System.out.println(sentence);
     }
 
-    static void showOptions(){
-        print("\nwelcome to the record shop. please choose an option:");
-        String[] options = {"1=go shopping","2=go to cart"};
-        print(String.join("\n",options));
+    static void showCart(ArrayList<CartItem> cart){
+        if (cart.size() > 0)
+        {
+            String header = String.format(row,"id","artist","album","amount","price");
+            print("\n your cart:\n");
+            print(header);
+            String divider = "-".repeat(header.length());
+            print(divider);
+            double balance = 0;
+            for (int index = 0; index < cart.size(); index++)
+            {
+                CartItem selected = cart.get(index);
+                balance += selected.quantity * selected.price;
+                String cartRow = String.format(row,selected.albumId,selected.artistName,selected.albumName,selected.quantity,selected.price);
+                print(cartRow);
+            }
+            print(String.format("\nyour balance: %.2f",balance));
+        }
     }
 
-    static void showCart(ArrayList<CartItem> cart){
-        String header = String.format(row,"id","artist","album","amount","price");
-        print(header);
-        String divider = "-".repeat(header.length());
-        print(divider);
-        for (int index = 0; index < cart.size(); index++)
-        {
-            CartItem selected = cart.get(index);
-            String cartRow = String.format(row,selected.albumId,selected.artistName,selected.albumName,selected.quantity,selected.price);
-            print(cartRow);
-        }
+    static int getAlbumIndex(Album[] albumList, String albumId){
+        return IntStream.range(0, albumList.length)
+                .filter(index -> albumList[index].albumId == Integer.valueOf(albumId))
+                .findFirst()
+                .getAsInt();
+    }
+
+    static int getCartIndex(ArrayList<CartItem> cart, String albumId)
+    {
+        return  IntStream.range(0, cart.size())
+                .filter(index -> cart.get(index).albumId == Integer.valueOf(albumId)).findFirst()
+                .orElse(-1);
     }
 
     public static void main(String[] args) {
         ArrayList<CartItem> cart = new ArrayList<CartItem>();
         Album[] albumList = initialize();
-        showOptions();
-        Boolean showMenu = true;
-        Boolean shopping = false;
-        while (showMenu)
-        {
-            Scanner reader = new Scanner(System.in);
-            String input = reader.nextLine();
-            switch (input)
-            {
-                case "1":
-                    showMenu = false;
-                    shopping = true;
-                    break;
-                default:
-                    print("hey");
-            }
-        }
-
+        Boolean shopping = true;
         while (shopping)
         {
             print("\ncurrent stock:\n");
             showInventory(albumList);
-            print("\ntype \"add album <id number> to add to cart\" or \"remove album <id number>\" to remove from your cart.");
+            showCart(cart);
+            print("\ntype \"add album <id number> to add to cart\" or \"remove album <id number>\" to remove from your cart. type \"exit\" to leave ");
             Scanner reader = new Scanner(System.in);
             String[] input = reader.nextLine().split(" ");
             switch (input[0].toLowerCase())
             {
                 case "add":
                     try {
-                        int albumIndex = IntStream.range(0, albumList.length)
-                                .filter(index -> albumList[index].albumId == Integer.valueOf(input[1]))
-                                .findFirst()
-                                .getAsInt();
-                        int cartIndex = IntStream.range(0, cart.size())
-                                .filter(index -> cart.get(index).albumId == Integer.valueOf(input[1])).findFirst()
-                                .orElse(-1);
-                        if (cart.size() > 0 && cartIndex != -1){
-                            cart.get(cartIndex).quantity ++;
+                        int albumIndex = getAlbumIndex(albumList,input[1]);
+                        int cartIndex = getCartIndex(cart,input[1]);
+                        Album selected = albumList[albumIndex];
+                        if (selected.stock > 0)
+                        {
+                            if (cart.size() > 0 && cartIndex != -1){
+                                cart.get(cartIndex).quantity ++;
+                            }
+                            else {
+                                CartItem newItem = new CartItem(selected.albumId,selected.artistName,selected.albumName,selected.price,1);
+                                cart.add(newItem);
+                            }
+                            albumList[albumIndex].stock -= 1;
                         }
-                        else {
-                            Album selected = albumList[albumIndex];
-                            CartItem newItem = new CartItem(selected.albumId,selected.artistName,selected.albumName,selected.price,1);
-                            cart.add(newItem);
+                        else
+                        {
+                            print("not enough stock");
                         }
-                        albumList[albumIndex].stock -= 1;
-                        showCart(cart);
                     }
                     catch(Exception error) {
                         print("no album found");
                     }
                     break;
+                case "remove":
+                    try{
+                        int cartIndex = getCartIndex(cart,input[1]);
+                        int albumIndex = getAlbumIndex(albumList,input[1]);
+                        if (cartIndex != -1)
+                        {
+                            cart.get(cartIndex).quantity --;
+                            albumList[albumIndex].stock ++;
+                            if (cart.get(cartIndex).quantity == 0) cart.remove(cartIndex);
+                        }
+                        showCart(cart);
+                    }
+                    catch(Exception error) {
+                        print("no items in your cart");
+                    }
+                    break;
+                case "exit":
+                    shopping = false;
+                    break;
+                default:
+                    print("unknown command");
 
 
             }
-
-
         }
     }
 }
