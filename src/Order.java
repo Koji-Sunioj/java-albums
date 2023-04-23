@@ -8,9 +8,14 @@ public class Order {
 
     public ArrayList<CartItem> items;
 
-    public Order(ArrayList<CartItem> items){
+    public Order(ArrayList<CartItem> cart){
+        ArrayList<CartItem> cartCopy = new ArrayList<CartItem>();
+        for (int i = 0;i < cart.size(); i++)
+        {
+            cartCopy.add(cart.get(i));
+        }
         this.orderId = String.valueOf(UUID.randomUUID());
         this.createdAt = Calendar.getInstance();
-        this.items = items;
+        this.items = cartCopy;
     }
 }
