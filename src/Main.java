@@ -1,4 +1,3 @@
-import javax.swing.plaf.synth.SynthTabbedPaneUI;
 import java.util.ArrayList;
 import java.util.stream.IntStream;
 import java.util.*;
@@ -7,20 +6,25 @@ public class Main {
 
     static String row = "| %-4s | %-20s | %-25s | %-5s | %-5s |";
 
-    public static void showInventory(Album[] albumList) {
+    static void showInventory(Album[] albumList) {
+        print("\ncurrent stock:\n");
         String stockRow = row + " %-5s |";
         String header = String.format(stockRow, "id", "artist", "album", "year", "stock", "price");
         print(header);
         String divider = "-".repeat(header.length());
         print(divider);
-        for (int index = 0; index < albumList.length; index++) {
-            Album selected = albumList[index];
-            String inventoryRow = String.format(stockRow, selected.albumId, selected.artistName, selected.albumName, selected.releasedYear, selected.stock, selected.price);
+        Arrays.stream(albumList).sorted(a)
+        Collections.sort(albumList, (Album a1, Album a2) -> a1.albumId-a2.albumId);
+        /*.sort((CartItem a1, CartItem a2) -> a2.albumId - a1.albumId);*/
+        //https://mkyong.com/java8/java-8-how-to-sort-list-with-stream-sorted/
+        //Collections.sort(list, (ActiveAlarm a1, ActiveAlarm a2) -> a1.timeStarted-a2.timeStarted);
+        for (Album album : albumList) {
+            String inventoryRow = String.format(stockRow, album.albumId, album.artistName, album.albumName, album.releasedYear, album.stock, album.price);
             print(inventoryRow);
         }
     }
 
-    public static Album[] initialize() {
+     static Album[] initialize() {
         Album SOTLB = new Album(141, "dissection", "storm of the light's bane", 1993, 12.99, 5);
         Album DOP = new Album(279, "immolation", "dawn of possession", 1996, 8.20, 3);
         Album SR = new Album(672, "skeletal remains", "condemmned to misery", 2012, 10.34, 1);
@@ -32,63 +36,58 @@ public class Main {
         System.out.println(sentence);
     }
 
-    static void showCart(ArrayList<CartItem> cart) {
+    static void showCart(ArrayList<CartItem> cart,String type) {
         if (cart.size() > 0) {
-            String header = String.format(row, "id", "artist", "album", "amount", "price");
-            print("\n your cart:\n");
+            String rowHeader = String.format(row, "id", "artist", "album", "amount", "price");
+            String header = type == "cart" ? "\nyour cart:\n" : "\norder items:\n";
             print(header);
-            String divider = "-".repeat(header.length());
+            print(rowHeader);
+            String divider = "-".repeat(rowHeader.length());
             print(divider);
             double balance = 0;
-            for (int index = 0; index < cart.size(); index++) {
-                CartItem selected = cart.get(index);
-                balance += selected.quantity * selected.price;
-                String cartRow = String.format(row, selected.albumId, selected.artistName, selected.albumName, selected.quantity, selected.price);
+            //Collections.sort(cart, (CartItem a1, CartItem a2) -> a2.albumId - a1.albumId);
+            for (CartItem cartItem : cart) {
+                balance += cartItem.quantity * cartItem.price;
+                String cartRow = String.format(row, cartItem.albumId, cartItem.artistName, cartItem.albumName, cartItem.quantity, cartItem.price);
                 print(cartRow);
             }
-            print(String.format("\nyour balance: %.2f", balance));
+            print(String.format("\nbalance: %.2f", balance));
         }
     }
 
     static int getAlbumIndex(Album[] albumList, String albumId) {
         return IntStream.range(0, albumList.length)
-                .filter(index -> albumList[index].albumId == Integer.valueOf(albumId)).findFirst()
+                .filter(index -> albumList[index].albumId == Integer.parseInt(albumId)).findFirst()
                 .orElse(-1);
     }
 
-    static void showOrder(ArrayList<Order> orders){
-        if (orders.size() > 0)
-        {
-            Order lastOrder = orders.get(orders.size()-1);
-            print(String.format("order id: %s\ndate: %s",lastOrder.orderId,String.valueOf(lastOrder.createdAt.getTime())));
-            print(String.valueOf(lastOrder.items.size()));
-             for (int i = 0; i < lastOrder.items.size();i++){
-                CartItem selected = lastOrder.items.get(i);
-                print(selected.artistName);
-            }
+    static void showOrder(ArrayList<Order> orders) {
+        if (orders.size() > 0) {
+            Order lastOrder = orders.get(orders.size() - 1);
+            print(String.format("order id: %s\ndate: %s", lastOrder.orderId, lastOrder.createdAt.getTime()));
+            showCart(lastOrder.items,"order");
         }
     }
 
     static int getCartIndex(ArrayList<CartItem> cart, String albumId) {
         return IntStream.range(0, cart.size())
-                .filter(index -> cart.get(index).albumId == Integer.valueOf(albumId)).findFirst()
+                .filter(index -> cart.get(index).albumId == Integer.parseInt(albumId)).findFirst()
                 .orElse(-1);
     }
 
     public static void main(String[] args) {
-        ArrayList<Order> orders = new ArrayList<Order>();
-        ArrayList<CartItem> cart = new ArrayList<CartItem>();
+        ArrayList<Order> orders = new ArrayList<>();
+        ArrayList<CartItem> cart = new ArrayList<>();
         Album[] albumList = initialize();
         String message = null;
-        Boolean shopping = true;
+        boolean shopping = true;
         while (shopping) {
             System.out.print("\033[H\033[2J");
             System.out.flush();
             if (message != null) print(message);
             showOrder(orders);
-            print("\ncurrent stock:\n");
             showInventory(albumList);
-            showCart(cart);
+            showCart(cart,"cart");
             print("\ntype \"add album <id number> to add to cart\" or \"remove album <id number>\" to remove from your cart. type \"exit\" to leave, or \"checkout\" to create an order");
             Scanner reader = new Scanner(System.in);
             String[] input = reader.nextLine().split(" ");
@@ -96,19 +95,24 @@ public class Main {
                 case "add":
                     try {
                         int albumIndex = getAlbumIndex(albumList, input[1]);
-                        int cartIndex = getCartIndex(cart, input[1]);
-                        Album selected = albumList[albumIndex];
-                        if (selected.stock > 0) {
-                            if (cart.size() > 0 && cartIndex != -1) {
+                        Album targetAlbum = albumList[albumIndex];
+                        if (targetAlbum.stock > 0)
+                        {
+                            int cartIndex = getCartIndex(cart, input[1]);
+                            if (cartIndex >= 0)
+                            {
                                 cart.get(cartIndex).quantity++;
                                 message = "\nupdated quantity in cart";
-                            } else {
-                                CartItem newItem = new CartItem(selected.albumId, selected.artistName, selected.albumName, selected.price, 1);
+                            }
+                            else
+                            {
+                                CartItem newItem = new CartItem(targetAlbum.albumId, targetAlbum.artistName, targetAlbum.albumName, targetAlbum.price, 1);
                                 cart.add(newItem);
-                                message = "\nadded cart in album";
+                                message = "\nadded new item to cart";
                             }
                             albumList[albumIndex].stock -= 1;
-                        } else {
+                        }
+                        else {
                             message = "\nnot enough stock";
                         }
                     } catch (Exception error) {
@@ -118,7 +122,6 @@ public class Main {
                 case "remove":
                     try {
                         int cartIndex = getCartIndex(cart, input[1]);
-                        print(String.valueOf(cartIndex));
                         int albumIndex = getAlbumIndex(albumList, input[1]);
                         if (cartIndex != -1) {
                             cart.get(cartIndex).quantity--;
@@ -137,7 +140,7 @@ public class Main {
                     }
                     break;
                 case "checkout":
-                    if (cart.size() > 0){
+                    if (cart.size() > 0) {
                         Order newOrder = new Order(cart);
                         orders.add(newOrder);
                         cart.clear();
