@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 
-public class Album {
+ public class Album{
     public int albumId;
     public String albumName;
     public String artistName;
@@ -19,5 +19,4 @@ public class Album {
         this.price =price;
         this.stock = stock;
     }
-
 }

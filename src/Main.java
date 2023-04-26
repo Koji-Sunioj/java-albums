@@ -2,7 +2,9 @@ import java.util.ArrayList;
 import java.util.stream.IntStream;
 import java.util.*;
 
-public class Main {
+
+
+class Main {
 
     static String row = "| %-4s | %-20s | %-25s | %-5s | %-5s |";
 
@@ -13,11 +15,7 @@ public class Main {
         print(header);
         String divider = "-".repeat(header.length());
         print(divider);
-        Arrays.stream(albumList).sorted(a)
-        Collections.sort(albumList, (Album a1, Album a2) -> a1.albumId-a2.albumId);
-        /*.sort((CartItem a1, CartItem a2) -> a2.albumId - a1.albumId);*/
-        //https://mkyong.com/java8/java-8-how-to-sort-list-with-stream-sorted/
-        //Collections.sort(list, (ActiveAlarm a1, ActiveAlarm a2) -> a1.timeStarted-a2.timeStarted);
+        Arrays.sort(albumList, new SortAlbum("descending","albumName"));
         for (Album album : albumList) {
             String inventoryRow = String.format(stockRow, album.albumId, album.artistName, album.albumName, album.releasedYear, album.stock, album.price);
             print(inventoryRow);
@@ -45,7 +43,6 @@ public class Main {
             String divider = "-".repeat(rowHeader.length());
             print(divider);
             double balance = 0;
-            //Collections.sort(cart, (CartItem a1, CartItem a2) -> a2.albumId - a1.albumId);
             for (CartItem cartItem : cart) {
                 balance += cartItem.quantity * cartItem.price;
                 String cartRow = String.format(row, cartItem.albumId, cartItem.artistName, cartItem.albumName, cartItem.quantity, cartItem.price);

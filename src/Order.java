@@ -2,7 +2,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.UUID;
 
-public class Order {
+class Order {
     public String orderId;
     public Calendar createdAt;
 

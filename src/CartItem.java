@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 
-public class CartItem {
+class CartItem {
     public int albumId;
     public String albumName;
     public String artistName;
